@@ -1,4 +1,3 @@
-
 import ChatPage from './pages/ChatPage';
 import ListPage from './pages/ListPage';
 import LoginPage from './pages/LoginPage';

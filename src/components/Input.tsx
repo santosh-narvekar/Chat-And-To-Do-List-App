@@ -9,13 +9,15 @@ type InputProps= {
   disabled?:boolean;
 }
 
-const Input = ({name,
+const Input = ({
+  name,
   value,
   type="text",
   onChange,
   className,
   onKeyDown,
-  disabled}: InputProps) => {
+  disabled
+}: InputProps) => {
   return (
      <input 
         value={value}
