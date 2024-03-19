@@ -1,7 +1,7 @@
 // all firebase functions goes here
 // needs to be fixed
 
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { auth, db } from "./Firebase";
 import { toastError, toastSuccess } from "../utils/toast";
 import CatchErr from "../utils/catchErr";
@@ -12,7 +12,7 @@ import { defaultUser, setUser } from "../Redux/userSlice";
 import { AppDispatch } from "../Redux/store";
 import convertTime from "../utils/ConvertTime";
 import AvatarGenerator from "../utils/avatarGenerator";
-
+import React from "react";
 // collection names
 const usersColl = "users";
 const tasksColl = "tasks";
@@ -40,9 +40,10 @@ export const signUp = (data:authDataType,
         const userInfo = await addUserToCollection(user.uid,user.email || "",user.email?.split("@")[0] || "",imgLink)
         
         dispatch(setUser(userInfo));
-        
         setLoading(false);
         reset()
+
+        localStorage.setItem('currentUserPage','');
         navigate('/dashboard')
       }).catch((err) => {
         CatchErr(err)
@@ -77,6 +78,8 @@ export const signIn = (data:
     setLoading(false)
     reset();
 
+    
+    localStorage.setItem('currentUserPage','');
     // route the user to dashboard
     navigate('/dashboard');
 
@@ -86,6 +89,38 @@ export const signIn = (data:
     setLoading(false); 
   })
 }
+
+export const BE_signOut = async(dispatch:AppDispatch,navigate:NavigateFunction,Loading:React.Dispatch<React.SetStateAction<boolean>>) => {
+  // log out from firebase
+ Loading(true);
+ signOut(auth).then(async()=>{
+  // sign out successful
+  // updating user info
+  await updateUserInfo({isOnline:false});
+  
+  // set currentSelectedUser to empty
+  dispatch(setUser(defaultUser));
+  
+  // delete the user from ls
+  localStorage.removeItem("currentUser")
+  localStorage.removeItem("currentUserPage")
+   // route to auth page
+   navigate('/auth')
+   
+   Loading(false);
+   
+ }).catch((err)=>{
+  toastError(err);
+ })
+}
+
+
+export const getStorageUser = () => {
+  const user = localStorage.getItem('currentUser');
+  if(user) return JSON.parse(user)
+  else return null
+  }
+
 
 // add User To firbase collection
 const addUserToCollection = async(id:string,email:string,username:string,img:string)=>{
@@ -152,9 +187,3 @@ isOnline?:boolean
 
   }
 }
-
-const getStorageUser = () => {
-  const user = localStorage.getItem('currentUser');
-  if(user) return JSON.parse(user)
-  else return null
-  }

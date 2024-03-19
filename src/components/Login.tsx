@@ -1,11 +1,13 @@
 import { useNavigate } from "react-router-dom";
-import { signIn, signUp } from "../backend/Queries";
+import { getStorageUser, signIn, signUp } from "../backend/Queries";
 import Button from "./Button"
 import Input from "./Input"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "../Redux/store";
 import { authDataType } from "../types";
+import { setUser } from "../Redux/userSlice";
+
 const Login = () => {
   {/* STATE */}
   const [login,setLogin] = useState(true);
@@ -16,6 +18,15 @@ const Login = () => {
   const [signInLoading,setSignInLoading]=useState(false);
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
+  const currentUser = getStorageUser();
+  
+  useEffect(()=>{
+    if(currentUser?.id){
+      navigate('/dashboard')
+      localStorage.setItem("currentUserPage",'');
+      dispatch(setUser(currentUser));
+    }
+  },[navigate])
 
   const handleSignUp = () => {
     const data = {email,password,confirmPassword}
@@ -39,8 +50,9 @@ const Login = () => {
     setEmail("")
     setPassword("")
     setConfirmPassword("")
-    navigate('/dashboard')
+    //navigate('/dashboard')
   }
+
   return (
    <div className="w-full md:w-[455px]">
         <h1 className="text-white text-center font-bold text-4xl md:text-6xl mb-10">

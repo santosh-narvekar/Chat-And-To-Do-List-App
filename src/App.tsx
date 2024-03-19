@@ -8,9 +8,9 @@ import Layout from './pages/Layout';
 function App(){
   return <BrowserRouter>
   <Routes>
-    <Route path='/auth' element={ <LoginPage /> }  />
-    <Route path="/dashboard" element={<Layout/>}>
-      <Route index element={<ListPage />}/>
+    <Route path = '/auth' element={ <LoginPage /> }  />
+    <Route path = "/dashboard" element={<Layout />} >
+      <Route index element={<ListPage/>}/>
       <Route path="chat" element={<ChatPage />}/>
       <Route path="profile" element={<ProfilePage />}/>  
     </Route>
