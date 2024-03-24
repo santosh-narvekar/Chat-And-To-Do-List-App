@@ -20,16 +20,17 @@ export default function Header({}: Props) {
   const navigate = useNavigate()
 
   // subscribing our state with ui
-  //const {currentUser} = useSelector((state:RootState) => state.user)
-  const currentUser=getStorageUser()
+  const {currentUser} = useSelector((state:RootState) => state.user)
+  //const currentUser = getStorageUser()
   const dispatch = useDispatch();
   const user = getStorageUser()
 
   useEffect(()=>{
-    if(!currentUser?.id) navigate('/auth')
+    if(!user?.id) navigate('/auth')
     const page = getCurrentPage();
 
     if(user?.id){
+      dispatch(setUser(user))
       navigate(`/dashboard/${page}`)
     }else{
       dispatch(setUser(defaultUser))
@@ -60,7 +61,7 @@ export default function Header({}: Props) {
   return (
 
     <div className="drop-shadow-md bg-gradient-to-r from-myBlue to-myPink px-5 py-5 md:py-2 text-white
-      flex flex-wrap sm:flex-row gap-5 items-center justify-between">
+      flex flex-wrap sm:flex-row gap-5 items-center justify-between z-10">
       <img className="w-[70px] drop-shadow-md" src={logo} alt="logo" />
       <div className="flex flex-row-reverse md:flex-row items-center justify-center gap-5 flex-wrap">
         
@@ -70,17 +71,19 @@ export default function Header({}: Props) {
           
         
         {
-          getCurrentPage() !== 'chat' && <Icon IconName={BsFillChatFill} ping={true} onClick = {() => handleGoToPage("chat") }   />
+          getCurrentPage() !== 'chat' && <Icon IconName={BsFillChatFill} ping={true} onClick = {() => handleGoToPage("chat") }  
+          reduceOpacityOnHover={false} />
         }
 
         {
-          getCurrentPage()==='chat' || getCurrentPage()==="profile"?<Icon IconName={FiList} onClick={() => handleGoToPage("")}/>:null
+          getCurrentPage()==='chat' || getCurrentPage()==="profile"?<Icon IconName={FiList} onClick={() => handleGoToPage("")}
+          reduceOpacityOnHover={false} /> : null
         } 
 
-        <div className="group relative">
+        <div className = " group relative ">
         <UserHeader user={currentUser}/>
-        <div className="absolute pt-5 hidden group-hover:block w-full min-w-max">
-          <ul className="w-full bg-white overflow-hidden rounded-md shadow-md text-gray-700 pt-1">
+        <div className="absolute pt-5 hidden group-hover:block w-full min-w-max ">
+          <ul className="w-full bg-white overflow-hidden rounded-md shadow-md text-gray-700 pt-1 z-10 ">
            <p onClick={() => handleGoToPage("profile") } 
            className="hover:bg-gray-200 py-2 px-4 block cursor-pointer">Profile</p>
            <p

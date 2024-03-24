@@ -1,11 +1,13 @@
 // redux is a state management library and helps to manage state globally
 import { configureStore } from '@reduxjs/toolkit'
 import userSlice from "./userSlice"
+import taskListSlice from "./taskSlice"
 // ...
 
 export const store = configureStore({
   reducer: {
-    user:userSlice
+    user:userSlice,
+    taskList:taskListSlice
   }
 })
 

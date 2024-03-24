@@ -10,11 +10,12 @@ const CatchErr = (err : { code?: string }) => {
   else if(code==="auth/email-already-in-use") toastError("email already Exists")
   else if(code==="auth/wrong-password") toastError("wrong password");
   else if(code==="auth/unavailable") toastError("can't fetch your request at this time")
-  else if(code==="auth/requires-recent-login") toastInfo("logout and login again!");
+  else if(code==="auth/requires-recent-login") toastInfo("logout and login again ");
   else if(code === "auth/invalid-login-credentials") toastError('invalid login credentials')
   else if(code ==="auth/invalid-credential") toastError('invalid login credentials!')
+  else if(code==="auth/operation-not-allowed") toastError('email  not updating now!');
   else toastError("An error occured!");
-  
+  console.log(err.code)
 }
 
 export default CatchErr

@@ -14,7 +14,7 @@ export const defaultUser:userType={
 
 const initialState = {
   // users:[],
-   currentUser:defaultUser,
+  currentUser:defaultUser,
   // currentSelectedUser:null
 }
 
@@ -22,8 +22,10 @@ const userSlice = createSlice({
    name:'user',
    initialState,
    reducers:{
-    setUser:(state,action)=>{
+    setUser:(state,action) => {
       const user = action.payload
+      console.log(user);
+      console.log(action.payload)
       // store user in localstorage
       localStorage.setItem('currentUser',JSON.stringify(user));
       // currently logged In Users

@@ -50,7 +50,6 @@ const Login = () => {
     setEmail("")
     setPassword("")
     setConfirmPassword("")
-    //navigate('/dashboard')
   }
 
   return (
