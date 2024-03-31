@@ -33,7 +33,7 @@ export const SingleTaskList = forwardRef(({singleTaskList}: Props,ref:React.Lega
   useEffect(()=>{
     for(let i=0;i<tasks?.length;i++){
       let task = tasks[i];
-      if(!task?.collapsed) return setAllCollapsed(false)
+      if(!task?.collapsed) return setAllCollapsed(false) // \/ 
     } 
   return setAllCollapsed(true)
   },[tasks])

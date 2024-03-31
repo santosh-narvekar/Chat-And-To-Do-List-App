@@ -23,10 +23,10 @@ export default function AddListBoard({}: Props) {
        loading={loading}
        onClick={handleAddLoading}
         />
-       <Icon IconName={MdAdd} 
+       <Icon IconName = {MdAdd} 
        loading={loading}
        onClick={handleAddLoading}
-       className=" block md:hidden " reduceOpacityOnHover={false}/>
+       className = "block md:hidden" reduceOpacityOnHover={false}/>
     </>
   )
 }

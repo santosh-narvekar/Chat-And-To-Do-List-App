@@ -25,7 +25,7 @@ export default function Icon({IconName,
     ${className}
     `}
     >
-      {loading?<Spinner />:<IconName size={size} />}
+      {loading ? <Spinner /> : <IconName size={size}  />}
       
       {ping && (<>
       <span className="absolute border-2 -top-1 left-7 w-3 h-3 

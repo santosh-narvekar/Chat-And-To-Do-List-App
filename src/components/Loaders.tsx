@@ -38,3 +38,50 @@ export const TaskListTasksLoader=()=>{
     <div className="h-2 bg-gray-300 rounded"></div>
   </div>
 }
+
+// loader for left sideba
+export const UsersLoader = () => {
+  return <div className="flex flex-col  ">
+  {
+  [1,2,3,4,5,6,7,8].map((i)=>{
+      return <UserLoader key={i} />
+    })
+  }
+  </div>
+}
+
+export const UserLoader=() => {
+  return <div className = " animate-pulse flex  gap-2 items-center px-5 py-3 border-b-[1px] border-gray-200 ">
+    <div className = "rounded-full w-11 h-11 bg-gray-300">
+    </div>
+    <div className = "flex flex-col gap-2 w-[70%]">
+      <div className="bg-gray-300 h-3 rounded-md"></div>
+      <div className="bg-gray-300 h-3 rounded-md"></div>
+    </div>
+  </div>
+}
+
+export const MessageLoader=()=>{
+  return(
+    <div className="flex-1 overflow-y-scroll">
+    {
+      [1,2,3,4,5,6].map((m)=>{
+        return <SingleMessageLoader key={m} />
+      })
+    }
+    </div>
+  )
+}
+
+const SingleMessageLoader=()=>{
+  return (
+    <div className="animate-pulse flex flex-col gap-10">
+      <div
+      className="bg-gray-200 h-12 w-full rounded-t-full rounded-br-full border-2 border-white self-start max-w-sm"
+      ></div>
+      <div className="bg-gray-300 h-12 w-full mb-5 rounded-t-full border-2 border-white self-end
+      max-w-sm rounded-bl-full
+      " ></div>
+    </div>
+  )
+}

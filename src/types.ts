@@ -1,3 +1,5 @@
+import { NoSubstitutionTemplateLiteral } from "typescript"
+
 export type setLoadingType = React.Dispatch<React.SetStateAction<boolean>>
 
 export type authDataType = {
@@ -30,4 +32,21 @@ export type taskType={
   description:string;
   editMode?:boolean;
   collapsed?:boolean;
+}
+
+export type chatType={
+  senderId:string,
+  receiverId:string,
+  id?:string,
+  lastMsg?:string,
+  senderToReceiverNewMsgCount?:number,
+  receiverToSenderNewMsgCount?:number,
+  updatedAt?:string
+}
+
+export type message={
+  senderId:string,
+  content:string,
+  createdAt?:string,
+  id?:string
 }

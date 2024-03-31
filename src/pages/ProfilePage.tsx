@@ -26,9 +26,6 @@ export default function ProfilePage(){
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
   
-  useEffect(()=>{
-   dispatch(setUser(user))
-  },[])
 
   const generateAvatar=()=>{
    setAvatar(AvatarGenerator())

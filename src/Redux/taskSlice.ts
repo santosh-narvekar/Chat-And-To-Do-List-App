@@ -32,7 +32,8 @@ const taskListSlice = createSlice({
     addTaskList:(state,action) => {
       const newTaskList = action.payload;
       newTaskList.editMode = true;
-      newTaskList.tasks = [];
+      newTaskList.tasks = []; 
+      if(state.currentTaskList.includes(newTaskList)) return        
       state.currentTaskList.push(newTaskList);
     },
     saveTaskListTitle:(state,action)=>{

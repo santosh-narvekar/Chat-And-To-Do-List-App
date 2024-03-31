@@ -4,17 +4,18 @@ import { createUserWithEmailAndPassword, deleteUser, getAuth, signInWithEmailAnd
 import { auth, db } from "./Firebase";
 import { toastError, toastSuccess } from "../utils/toast";
 import CatchErr from "../utils/catchErr";
-import { authDataType, setLoadingType, taskListType, taskType, userType } from "../types";
+import { authDataType, chatType, message, setLoadingType, taskListType, taskType, userType } from "../types";
 import { NavigateFunction, useActionData } from "react-router-dom";
 
-import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, query, serverTimestamp, setDoc, updateDoc, where } from "firebase/firestore";
-import { defaultUser, setUser } from "../Redux/userSlice";
+import { addDoc, and, collection, deleteDoc, doc, getDoc, getDocs, onSnapshot, or, orderBy, query, serverTimestamp, setDoc, updateDoc, where } from "firebase/firestore";
+import { defaultUser, setAlertOpen, setUser, setUsers } from "../Redux/userSlice";
 import { AppDispatch } from "../Redux/store";
 import convertTime from "../utils/ConvertTime";
 import AvatarGenerator from "../utils/avatarGenerator";
 import React from "react";
 import { addTask, addTaskList, defaultTask, defaultTaskList,deleteTask,deleteTaskList,saveTask,saveTaskListTitle, setTask, setTaskList } from "../Redux/taskSlice";
 import { setLogLevel } from "firebase/app";
+import { setChats, setCurrentMessages } from "../Redux/chatSlice";
 // collection names
 const usersColl = "users";
 const tasksColl = "tasks";
@@ -22,7 +23,7 @@ const taskListsColl = "taskList";
 const ChatsColl = "chats"
 const messagesColl = "messages" 
 
-// user Signup
+// ================= USERS ========================
 export const signUp = (data:authDataType,
   setLoading:setLoadingType,
   reset:()=> void,
@@ -35,18 +36,18 @@ export const signUp = (data:authDataType,
   if(email && password){
     if(password === confirmPassword){
       createUserWithEmailAndPassword(auth,email,password).then(async({user}) => {
-        toastSuccess('user registered Successfully!')
-      
+        
         const imgLink = AvatarGenerator(user.email?.split('@')[0]);
-  
+        
         const userInfo = await addUserToCollection(user.uid,user.email || "",user.email?.split("@")[0] || "",imgLink)
         
         dispatch(setUser(userInfo));
         setLoading(false);
         reset()
-
+        
         localStorage.setItem('currentUserPage','');
         navigate('/dashboard')
+        toastSuccess('user registered Successfully!')
       }).catch((err) => {
         CatchErr(err)
         setLoading(false);
@@ -57,7 +58,6 @@ export const signUp = (data:authDataType,
   
 }
 
-// user Login
 export const signIn = (data:
   authDataType,
   setLoading:setLoadingType,
@@ -125,8 +125,7 @@ export const getStorageUser = () => {
   else return null
 }
 
-
-// saving userInfo
+// ==== UPDATING PROFILE ======
 export const saveInfo=async(dispatch:AppDispatch,data:{
   email:string,
   username:string,
@@ -138,18 +137,7 @@ export const saveInfo=async(dispatch:AppDispatch,data:{
   const {email,username,password,img} = data;
   const {id} = getStorageUser();
 
-  /*
-  updateProfile(auth.currentUser, {
-  displayName: "Jane Q. User", photoURL: "https://example.com/jane-q-user/profile.jpg"
-}).then(() => {
-  // Profile updated!
-  // ...
-}).catch((error) => {
-  // An error occurred
-  // ...
-});
-
-  */
+  
   if(id && auth.currentUser){
 
     // update email if present
@@ -191,7 +179,6 @@ export const saveInfo=async(dispatch:AppDispatch,data:{
   
 }
 
-// delete user account
 export const deleteAccount = async(
   dispatch:AppDispatch,
   navigate:NavigateFunction,
@@ -232,7 +219,70 @@ export const deleteAccount = async(
 
 }
 
-// add User To firebase collection
+
+export const getAllUsers = async(dispatch:AppDispatch,setLoading:setLoadingType)=>{
+  setLoading(true);
+
+  // query for getting users and ordering it according to isOnline
+  const q = query(collection(db,usersColl),orderBy("isOnline","desc"));
+  
+  const users = onSnapshot(q,(querySnapshot)=>{
+    const users:userType[] = []
+  
+    querySnapshot.forEach((user)=>{
+      const {email,username,bio,creationTime,lastSeen,isOnline,img} = user.data();
+
+      users.push({
+        id:user?.id,
+        email,
+        username,
+        bio,
+        img,
+        isOnline,
+        creationTime:convertTime(creationTime?.toDate()),
+        lastSeen:convertTime(lastSeen?.toDate())
+      });
+    });
+
+    // take out the current user
+    const id = getStorageUser()?.id;
+    if(id){
+      dispatch(setUsers(users.filter(u=>u.id!==id)));
+    }
+    setLoading(false);
+  })
+  
+  console.log(users);
+}
+
+export const getUserInfo = async(id:string,setLoading?:setLoadingType):Promise<userType> => {
+  if(setLoading) setLoading(true)
+  const userRef = doc(db,usersColl,id);
+  const user = await getDoc(userRef);
+
+  if(user.exists()){
+    const {img,isOnline,username,email,bio,creationTime,lastSeen} = user.data();
+    if(setLoading) setLoading(false)
+
+    return {
+      id:user.id,
+      img,
+      isOnline,
+      username,
+      email,
+      bio,
+      creationTime:creationTime ? convertTime(creationTime.toDate()):'no date yet! userInfo ',
+      lastSeen:lastSeen ? convertTime(lastSeen.toDate()):'no date yet! userInfo '
+    }
+  }else{
+    toastError('user not found!')
+    if(setLoading) setLoading(false)
+    // return default user
+    return defaultUser
+  }
+
+}
+
 const addUserToCollection = async(id:string,email:string,username:string,img:string)=>{
   await setDoc(doc(db,usersColl,id) , {
     isOnline:true,
@@ -248,32 +298,7 @@ const addUserToCollection = async(id:string,email:string,username:string,img:str
   return  await getUserInfo(id)
 }
 
-// get user Information
-const getUserInfo = async(id:string):Promise<userType> => {
-  const userRef = doc(db,usersColl,id);
-  const user = await getDoc(userRef);
 
-  if(user.exists()){
-    const {img,isOnline,username,email,bio,creationTime,lastSeen} = user.data();
-
-    return {
-      id:user.id,
-      img,
-      isOnline,
-      username,
-      email,
-      bio,
-      creationTime:creationTime ? convertTime(creationTime.toDate()):'no date yet! userInfo ',
-      lastSeen:lastSeen ? convertTime(lastSeen.toDate()):'no date yet! userInfo '
-    }
-  }else{
-    toastError('user not found!')
-    // return default user
-    return defaultUser
-  }
-}
-
-// updating userInfo on signIn
 const updateUserInfo = async({id,username,img,isOnline}:{
 id?:string,
 username?:string,
@@ -298,9 +323,9 @@ isOnline?:boolean
   }
 }
 
-// ======================== TASK LISTS =====================
 
-// add a single task list
+// ======================== TASKLISTS =====================
+
 export const Be_addTaskList = async(dispatch:AppDispatch,setLoading:setLoadingType)=>{
   setLoading(true);
   const {title} = defaultTaskList;
@@ -329,7 +354,6 @@ export const Be_addTaskList = async(dispatch:AppDispatch,setLoading:setLoadingTy
   }
 }
 
-// get all task list
 export const Be_getTaskList = async(dispatch:AppDispatch,setLoading:setLoadingType)=>{
   setLoading(true);
 
@@ -367,12 +391,8 @@ export const Be_deleteTaskList = async(listId:string,tasks:taskType[],dispatch:A
   dispatch(deleteTaskList({listId}));
 }
 
-
-
-// get all users tasklist
 const getAllTaskList = async() => {
-  const q = query(collection(db, taskListsColl), where("userId", "==", getStorageUser().id));
- 
+  const q = query(collection(db, taskListsColl), where("userId", "==", getStorageUser()?.id));
   const taskListSnapshot = await getDocs(q);
   const taskList : taskListType[] = []
 
@@ -389,9 +409,8 @@ const getAllTaskList = async() => {
   return taskList
 }
 
-// ======================= TASK ========================
+// ======================= TASKS ========================
 
-// delete task
 export const be_deleteTask = async(listId:string,id:string,dispatch:AppDispatch,setLoading?:setLoadingType) => {
   if(setLoading) setLoading(true);
   
@@ -413,7 +432,6 @@ export const be_deleteTask = async(listId:string,id:string,dispatch:AppDispatch,
   }
 }
 
-// add task 
 export const be_addTask = async(dispatch:AppDispatch,listId:string,setLoading:setLoadingType)=>{
   setLoading(true);
 
@@ -421,7 +439,6 @@ export const be_addTask = async(dispatch:AppDispatch,listId:string,setLoading:se
     ...defaultTask
   })
 
-  console.log(newTask.path)
   const newTaskSnapShot = await getDoc(doc(db,newTask.path));
 
   if(newTaskSnapShot.exists()) {
@@ -443,7 +460,6 @@ export const be_addTask = async(dispatch:AppDispatch,listId:string,setLoading:se
   }
 }
 
-// save task
 export const be_saveTask = async(dispatch:AppDispatch,id:string,setLoading:setLoadingType,listId:string,title:string,description:string)=>{
   setLoading(true);
 
@@ -471,7 +487,6 @@ export const be_saveTask = async(dispatch:AppDispatch,id:string,setLoading:setLo
 }
 };
 
-// get tasks for task list
 export const be_getTask = async(dispatch:AppDispatch,setLoading:setLoadingType,listId:string) => {
   setLoading(true);  
   
@@ -481,7 +496,7 @@ export const be_getTask = async(dispatch:AppDispatch,setLoading:setLoadingType,l
   // dispatch action
   dispatch(setTask({listId,tasks}))
   setLoading(false)
-}
+} 
 
 const getTasks = async(listId:string)=>{
    const querySnapshot = await getDocs(collection(db,taskListsColl,listId,tasksColl));
@@ -501,4 +516,178 @@ const getTasks = async(listId:string)=>{
    })
    
   return tasksList
+}
+
+// ====================== CHATS =========================
+
+// CHATS => CHATDOC => SENDER AND RECEIVER CHAT
+
+export const startChat = async(dispatch:AppDispatch,receiverId:string,
+receiverName:string,  
+setLoading:setLoadingType)=>{
+  const id=getStorageUser().id;
+  setLoading(true);
+
+  const q = query(collection(db,ChatsColl),or(
+     and(where("senderId","==",id),where("receiverId","==",receiverId)),
+     and(where("receiverId","==",id),where("senderId","==",receiverId)),
+  ))
+
+  const res = await getDocs(q);
+
+  if(res.empty){
+
+  const newChat = await addDoc(collection(db,ChatsColl),{
+     senderId:id,
+     receiverId,
+     lastMsg:"",
+     updatedAt:serverTimestamp(),
+     senderToReceiverNewMsgCount:0,
+     receiverToSenderNewMsgCount:0
+  });
+
+  const newChatSnapshot = await getDoc(doc(db,newChat.path))
+  
+  if(!newChatSnapshot.exists()){
+    // securing code
+    toastError("BE_startChat: No such document")
+  }
+
+  setLoading(false)
+  dispatch(setAlertOpen({
+    open:false,
+    receiverId:receiverId,
+    receiverName:receiverName
+  }));
+
+}else {
+  toastError(`You already started chatting with ${receiverName}`)
+  setLoading(false)
+  dispatch(setAlertOpen({open:false}))
+}
+  
+}
+
+export const getChats = async(dispatch:AppDispatch,senderId?:string)=>{
+ // setLoading(true);
+  const id = getStorageUser().id;
+
+  const q = query(collection(db,ChatsColl),or(where("senderId","==",id),where("receiverId",'==',id)),orderBy("updatedAt","desc"));
+
+  const chats = onSnapshot(q,(chatSnapShot)=>{
+    const chats:chatType[] = []
+
+    chatSnapShot.forEach(chat=>{
+      const {senderId,receiverId,lastMsg,
+      senderToReceiverNewMsgCount,
+      receiverToSenderNewMsgCount,
+      updatedAt
+      } = chat.data();
+
+      chats.push({
+       id:chat.id,
+       senderId,
+       receiverId,
+       lastMsg,
+       senderToReceiverNewMsgCount,
+       receiverToSenderNewMsgCount,
+       updatedAt:updatedAt?convertTime(updatedAt.toDate()):"no date yet ! all messages"
+      });
+    });
+
+    console.log(chats)
+    dispatch(setChats(chats))
+    
+    //setLoading(false)
+  });
+
+}
+
+// function to check if i started at a chat
+export const iCreatedChat=(senderId:string)=>{
+  const myId = getStorageUser().id;
+  return  myId === senderId;
+}
+
+// ====================== MESSAGES =======================
+
+export const getMsgs = async(dispatch:AppDispatch,chatId:string,setLoading:setLoadingType)=>{
+  setLoading(true);
+
+  const q = query(collection(db,ChatsColl,chatId,messagesColl),orderBy("createdAt","asc"));
+
+  
+  onSnapshot(q,messagesSnapshot=>{
+    let msgs:message[]=[];
+
+    messagesSnapshot.forEach(msg=>{
+      const {senderId,content,createdAt}=msg.data();
+      msgs.push({
+        id:msg.id,
+        senderId,
+        content,
+        createdAt:createdAt?convertTime(createdAt.toDate()):'no date present'
+      })
+    })
+
+    dispatch(setCurrentMessages(msgs));
+    setLoading(false);
+  })
+
+}
+
+export const sendMsgs = async(chatId:string,data:message,setLoading:setLoadingType)=>{
+  setLoading(true);
+
+  const res = await addDoc(collection(db,ChatsColl,chatId,messagesColl),{
+    ...data,
+    createdAt:serverTimestamp()
+  })
+
+  const newMsg = await getDoc(doc(db,res.path));
+
+  if(newMsg.exists()){
+    setLoading(false);
+    // reset new Message count
+    await updateMsgCount(chatId,true);
+    await updateLastMsg(chatId,newMsg.data().content);
+    await updateUserInfo({isOnline:true}); // updating last seen
+  }else{
+    toastError('BE_SENDMSGS:Something went wrong!')
+    setLoading(false)
+  }
+}
+
+const updateLastMsg = async(chatId:string,lastMsg:string)=>{
+  // await message count here
+  await updateMsgCount(chatId);
+  await updateDoc(doc(db,ChatsColl,chatId),{
+    lastMsg,
+    updatedAt:serverTimestamp()
+  });
+
+
+}
+
+const updateMsgCount = async(chatId:string,reset?:boolean) => {
+  // 1. Get the current chat document
+  const chat = await getDoc(doc(db,ChatsColl,chatId));
+
+  let senderToReceiverNewMsgCount = chat.data()?.senderToReceiverNewMsgCount;
+  let receiverToSenderNewMsgCount = chat.data()?.receiverToSenderNewMsgCount;
+
+  // checking the conditions
+  if(iCreatedChat(chat?.data()?.senderId)){
+    if(reset) receiverToSenderNewMsgCount = 0;
+    else senderToReceiverNewMsgCount++;
+  }else{
+    if(reset) senderToReceiverNewMsgCount = 0;
+    else receiverToSenderNewMsgCount++
+  }
+
+  await updateDoc(doc(db,ChatsColl,chatId),{
+    updatedAt:serverTimestamp(),
+    senderToReceiverNewMsgCount,
+    receiverToSenderNewMsgCount
+  })
 }
