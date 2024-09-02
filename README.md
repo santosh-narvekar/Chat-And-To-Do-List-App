@@ -1,3 +1,6 @@
+REACT+TYPESCRIPT PROJECT
+LIVE PROJECT URL: https://chat-app-e7bbc.firebaseapp.com
+
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
